@@ -18,21 +18,8 @@ void run_kernel_finalise(Chunk *chunk, Settings &settings);
 // Solver-wide kernels
 void run_local_halos(Chunk *chunk, Settings &settings, int depth);
 
-// void run_pack_or_unpack(Chunk *chunk, Settings &settings, int depth, int face, bool pack, FieldBufferType field,
-//                         FieldBufferType destination);
-
 void run_pack_or_unpack(Chunk *chunk, Settings &settings, int depth, int face, bool pack, FieldBufferType field,
                         FieldBufferType destination, int offset);
-//
-void run_send_recv_halo(Chunk *chunk, Settings &settings,                                                       //
-                        FieldBufferType src_send_buffer, FieldBufferType src_recv_buffer,                       //
-                        StagingBufferType dest_staging_send_buffer, StagingBufferType dest_staging_recv_buffer, //
-                        int buffer_len, int neighbour,                                                          //
-                        int send_tag, int recv_tag,                                                             //
-                        MPI_Request *send_request, MPI_Request *recv_request);
-void run_before_waitall_halo(Chunk *chunk, Settings &settings);
-void run_restore_recv_halo(Chunk *chunk, Settings &settings, //
-                           FieldBufferType dest_recv_buffer, StagingBufferType src_staging_recv_buffer, int buffer_len);
 
 void run_store_energy(Chunk *chunk, Settings &settings);
 void run_field_summary(Chunk *chunk, Settings &settings, double *vol, double *mass, double *ie, double *temp);

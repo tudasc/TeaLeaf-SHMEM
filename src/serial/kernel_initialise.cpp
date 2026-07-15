@@ -1,5 +1,7 @@
 #include "kernel_interface.h"
 
+#include <shmem.h>
+
 // Allocates, and zeroes and individual buffer
 static void allocate_buffer(double **a, int x, int y) {
   *a = static_cast<double *>(std::malloc(sizeof(double) * x * y));
@@ -13,6 +15,18 @@ static void allocate_buffer(double **a, int x, int y) {
       const int index = kk + jj * x;
       (*a)[index] = 0.0;
     }
+  }
+}
+
+static void allocate_shmem_buffer(double **a, int len) {
+  *a = static_cast<double *>(shmem_malloc(sizeof(double) * len));
+
+  if (*a == nullptr) {
+    die(__LINE__, __FILE__, "Error allocating symmetric halo buffer\n");
+  }
+
+  for (int ii = 0; ii < len; ++ii) {
+    (*a)[ii] = 0.0;
   }
 }
 
@@ -127,14 +141,14 @@ void run_kernel_initialise(Chunk *chunk, Settings &settings, int comms_lr_len, i
   allocate_buffer(&(chunk->cheby_alphas), settings.max_iters, 1);
   allocate_buffer(&(chunk->cheby_betas), settings.max_iters, 1);
 
-  allocate_buffer(&(chunk->left_send), comms_lr_len, 1);
-  allocate_buffer(&(chunk->left_recv), comms_lr_len, 1);
-  allocate_buffer(&(chunk->right_send), comms_lr_len, 1);
-  allocate_buffer(&(chunk->right_recv), comms_lr_len, 1);
-  allocate_buffer(&(chunk->top_send), comms_tb_len, 1);
-  allocate_buffer(&(chunk->top_recv), comms_tb_len, 1);
-  allocate_buffer(&(chunk->bottom_send), comms_tb_len, 1);
-  allocate_buffer(&(chunk->bottom_recv), comms_tb_len, 1); //
+  allocate_shmem_buffer(&(chunk->left_send), comms_lr_len);
+  allocate_shmem_buffer(&(chunk->left_recv), comms_lr_len);
+  allocate_shmem_buffer(&(chunk->right_send), comms_lr_len);
+  allocate_shmem_buffer(&(chunk->right_recv), comms_lr_len);
+  allocate_shmem_buffer(&(chunk->top_send), comms_tb_len);
+  allocate_shmem_buffer(&(chunk->top_recv), comms_tb_len);
+  allocate_shmem_buffer(&(chunk->bottom_send), comms_tb_len);
+  allocate_shmem_buffer(&(chunk->bottom_recv), comms_tb_len);
 }
 
 void run_kernel_finalise(Chunk *chunk, Settings &settings) {
@@ -167,12 +181,12 @@ void run_kernel_finalise(Chunk *chunk, Settings &settings) {
   std::free(chunk->cheby_alphas);
   std::free(chunk->cheby_betas);
 
-  std::free(chunk->left_send);
-  std::free(chunk->left_recv);
-  std::free(chunk->right_send);
-  std::free(chunk->right_recv);
-  std::free(chunk->top_send);
-  std::free(chunk->top_recv);
-  std::free(chunk->bottom_send);
-  std::free(chunk->bottom_recv);
+  shmem_free(chunk->left_send);
+  shmem_free(chunk->left_recv);
+  shmem_free(chunk->right_send);
+  shmem_free(chunk->right_recv);
+  shmem_free(chunk->top_send);
+  shmem_free(chunk->top_recv);
+  shmem_free(chunk->bottom_send);
+  shmem_free(chunk->bottom_recv);
 }

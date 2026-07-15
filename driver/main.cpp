@@ -1,5 +1,3 @@
-#include <optional>
-
 #include "application.h"
 #include "chunk.h"
 #include "comms.h"
@@ -85,26 +83,6 @@ int main(int argc, char **argv) {
   bool profiling = false;
 #endif
 
-#ifdef NO_MPI
-  bool mpi_enabled = false;
-#else
-  bool mpi_enabled = true;
-#endif
-
-#if defined(MPIX_CUDA_AWARE_SUPPORT) && MPIX_CUDA_AWARE_SUPPORT
-  std::optional<bool> mpi_cuda_aware_header = true;
-#elif defined(MPIX_CUDA_AWARE_SUPPORT) && !MPIX_CUDA_AWARE_SUPPORT
-  std::optional<bool> mpi_cuda_aware_header = false;
-#else
-  std::optional<bool> mpi_cuda_aware_header = {};
-#endif
-
-#if defined(MPIX_CUDA_AWARE_SUPPORT)
-  std::optional<bool> mpi_cuda_aware_runtime = MPIX_Query_cuda_support() != 0;
-#else
-  std::optional<bool> mpi_cuda_aware_runtime = {};
-#endif
-
   initialise_model_info(settings);
   State *states{};
   read_config(settings, &states);
@@ -112,9 +90,7 @@ int main(int argc, char **argv) {
   switch (settings.staging_buffer_preference) {
     case StagingBuffer::ENABLE: settings.staging_buffer = true; break;
     case StagingBuffer::DISABLE: settings.staging_buffer = false; break;
-    case StagingBuffer::AUTO:
-      settings.staging_buffer = !(mpi_cuda_aware_header.value_or(false) && mpi_cuda_aware_runtime.value_or(false));
-      break;
+    case StagingBuffer::AUTO: settings.staging_buffer = false; break;
   }
 
   std::string execution_kind;
@@ -139,23 +115,19 @@ int main(int argc, char **argv) {
   Chunk *chunks{};
   initialise_application(&chunks, settings, states);
 
-  print_and_log(settings, "MPI:\n");
-  print_and_log(settings, " - Enabled:     %s\n", mpi_enabled ? "true" : "false");
-  print_and_log(settings, " - Total ranks: %d\n", settings.num_ranks);
-  print_and_log(settings, " - Header device-awareness (CUDA-awareness):  %s\n",
-                (mpi_cuda_aware_header ? (*mpi_cuda_aware_header ? "true" : "false") : "unknown"));
-  print_and_log(settings, " - Runtime device-awareness (CUDA-awareness): %s\n",
-                (mpi_cuda_aware_runtime ? (*mpi_cuda_aware_runtime ? "true" : "false") : "unknown"));
-  print_and_log(settings, " - Host-Device halo exchange staging buffer:  %s\n", (settings.staging_buffer ? "true" : "false"));
+  print_and_log(settings, "OpenSHMEM:\n");
+  print_and_log(settings, " - Enabled:     %s\n", (settings.num_ranks > 1 ? "true" : "false"));
+  print_and_log(settings, " - Total PEs:   %d\n", settings.num_ranks);
 
   long chunk_comms_total_x = 0, chunk_comms_total_y = 0;
   for (int i = 0; i < settings.num_chunks_per_rank; ++i) {
     chunk_comms_total_x += chunks[i].x * settings.halo_depth * NUM_FIELDS;
     chunk_comms_total_y += chunks[i].y * settings.halo_depth * NUM_FIELDS;
   }
-  long global_chunks_total_x = 0, global_chunks_total_y = 0;
-  MPI_Reduce(&chunk_comms_total_x, &global_chunks_total_x, 1, MPI_LONG, MPI_SUM, MASTER, MPI_COMM_WORLD);
-  MPI_Reduce(&chunk_comms_total_y, &global_chunks_total_y, 1, MPI_LONG, MPI_SUM, MASTER, MPI_COMM_WORLD);
+  long global_chunks_total_x = chunk_comms_total_x;
+  long global_chunks_total_y = chunk_comms_total_y;
+  sum_over_ranks(settings, &global_chunks_total_x);
+  sum_over_ranks(settings, &global_chunks_total_y);
   print_and_log(settings, " - X buffer elements: %ld\n", global_chunks_total_x);
   print_and_log(settings, " - Y buffer elements: %ld\n", global_chunks_total_y);
   print_and_log(settings, " - X buffer size:     %ld KB\n", chunk_comms_total_x * sizeof(double) / 1000);
