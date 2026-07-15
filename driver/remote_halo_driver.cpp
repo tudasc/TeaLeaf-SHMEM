@@ -46,8 +46,6 @@ void remote_halo_driver(Chunk *chunks, Settings &settings, int depth) {
       invoke_pack_or_unpack(&(chunks[cc]), settings, CHUNK_RIGHT, depth, chunks[cc].y, true, chunks[cc].right_send);
   }
 
-  halo_sync(settings);
-
   for (int cc = 0; cc < settings.num_chunks_per_rank; ++cc) {
     int buffer_len = 0;
     for (int ii = 0; ii < NUM_FIELDS; ++ii) {
@@ -80,8 +78,6 @@ void remote_halo_driver(Chunk *chunks, Settings &settings, int depth) {
     if (chunks[cc].neighbours[CHUNK_TOP] != EXTERNAL_FACE)
       invoke_pack_or_unpack(&(chunks[cc]), settings, CHUNK_TOP, depth, chunks[cc].x, true, chunks[cc].top_send);
   }
-
-  halo_sync(settings);
 
   for (int cc = 0; cc < settings.num_chunks_per_rank; ++cc) {
     int buffer_len = 0;

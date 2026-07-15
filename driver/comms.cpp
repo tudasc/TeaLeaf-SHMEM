@@ -62,10 +62,10 @@ void finalise_comms() {
   shmem_finalize();
 }
 
-// One-sided put of a halo buffer into the target PE's symmetric recv buffer
+// One-sided, non-blocking put of a halo buffer into the target PE's symmetric recv buffer.
 void put_halo_message(Settings &settings, double *target_recv_buffer, double *send_buffer, int buffer_len, int target_pe) {
   START_PROFILING(settings.kernel_profile);
-  shmem_double_put(target_recv_buffer, send_buffer, buffer_len, target_pe);
+  shmem_double_put_nbi(target_recv_buffer, send_buffer, buffer_len, target_pe);
   STOP_PROFILING(settings.kernel_profile, __func__);
 }
 
