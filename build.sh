@@ -1,4 +1,1 @@
-#!/usr/bin/env bash
-
-
-module load cmake
+oshcxx -g -O3 driver/*.cpp src/serial/*.cpp -I src/serial -I driver
