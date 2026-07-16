@@ -3,8 +3,6 @@
 
 #include <shmem.h>
 
-#define REDUCE_WRK_SIZE 8
-
 static double *reduce_src_dbl = nullptr;
 static double *reduce_dst_dbl = nullptr;
 static long *reduce_src_long = nullptr;
@@ -28,9 +26,9 @@ void initialise_comms(int, char **) {
   reduce_src_int = static_cast<int *>(shmem_malloc(sizeof(int)));
   reduce_dst_int = static_cast<int *>(shmem_malloc(sizeof(int)));
 
-  pWrk_dbl = static_cast<double *>(shmem_malloc(sizeof(double) * REDUCE_WRK_SIZE));
-  pWrk_long = static_cast<long *>(shmem_malloc(sizeof(long) * REDUCE_WRK_SIZE));
-  pWrk_int = static_cast<int *>(shmem_malloc(sizeof(int) * REDUCE_WRK_SIZE));
+  pWrk_dbl = static_cast<double *>(shmem_malloc(sizeof(double) * SHMEM_REDUCE_MIN_WRKDATA_SIZE));
+  pWrk_long = static_cast<long *>(shmem_malloc(sizeof(long) * SHMEM_REDUCE_MIN_WRKDATA_SIZE));
+  pWrk_int = static_cast<int *>(shmem_malloc(sizeof(int) * SHMEM_REDUCE_MIN_WRKDATA_SIZE));
   pSync = static_cast<long *>(shmem_malloc(sizeof(long) * SHMEM_REDUCE_SYNC_SIZE));
 
   for (int i = 0; i < SHMEM_REDUCE_SYNC_SIZE; ++i) {
